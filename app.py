@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 # Creating the dataset
 data = {
@@ -32,11 +33,11 @@ data = {
         "Varies"
     ],
     "Price (INR/USD)": [
-        "₹435,000",
-        "₹725,000",
-        "On Request",
-        "On Request",
-        "$3,000"
+        435000,
+        725000,
+        None,
+        None,
+        3000
     ],
     "Website": [
         "https://www.we3group.com/bottle-making-machine.html",
@@ -53,8 +54,35 @@ df = pd.DataFrame(data)
 # Streamlit app title
 st.title("PET Jar Moulding Machine Dashboard")
 
-# Display the DataFrame
-st.dataframe(df, use_container_width=True)
+# Sidebar filters
+st.sidebar.header("Filters")
+selected_manufacturer = st.sidebar.selectbox("Select Manufacturer", ["All"] + list(df["Manufacturer"].unique()))
+price_range = st.sidebar.slider("Select Price Range (INR/USD)", min_value=3000, max_value=725000, value=(3000, 725000))
 
-# Instructions
-st.write("Click on the website links to explore each machine in more detail.")
+# Filter data
+filtered_df = df.copy()
+if selected_manufacturer != "All":
+    filtered_df = filtered_df[filtered_df["Manufacturer"] == selected_manufacturer]
+filtered_df = filtered_df[(filtered_df["Price (INR/USD)"].fillna(0) >= price_range[0]) & 
+                          (filtered_df["Price (INR/USD)"].fillna(0) <= price_range[1])]
+
+# Tabs for different sections
+tab1, tab2, tab3 = st.tabs(["Price Comparison", "Machine Specifications", "Best Value Options"])
+
+with tab1:
+    st.subheader("Price Comparison by Manufacturer")
+    fig = px.bar(filtered_df, x="Manufacturer", y="Price (INR/USD)", title="Price Comparison", text="Price (INR/USD)")
+    st.plotly_chart(fig, use_container_width=True)
+
+with tab2:
+    st.subheader("Machine Specifications")
+    st.dataframe(filtered_df, use_container_width=True)
+
+with tab3:
+    st.subheader("Best Value Machines")
+    best_value_df = filtered_df.sort_values(by="Price (INR/USD)", ascending=True).head(3)
+    st.dataframe(best_value_df, use_container_width=True)
+
+# Footer message
+st.write("Click on the website links in the table to explore each machine in more detail.")
+
